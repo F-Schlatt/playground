@@ -149,7 +149,7 @@ class Rewarder():
             for flame in flames:
                 if agent.agent_id != flame.bomber.agent_id:
                     continue
-                if flame.position[0] == x and flames.position[1] == y:
+                if flame.position[0] == x and flame.position[1] == y:
                     if self.bomb_offset:
                         reward += [[-(13 - flame.life), -0.25]]
                     else:
