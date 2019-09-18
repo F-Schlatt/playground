@@ -111,6 +111,7 @@ class Bomb(object):
                  blast_strength,
                  moving_direction=None):
         self.bomber = bomber
+        self.chain_bombers = set()
         self.position = position
         self.life = life
         self.blast_strength = blast_strength
@@ -164,9 +165,10 @@ class Bomb(object):
 class Flame(object):
     """Container for Flame object."""
 
-    def __init__(self, position, life=2):
+    def __init__(self, position, bomber, life=2):
         self.position = position
         self.life = life
+        self.bomber = bomber
 
     def tick(self):
         self.life -= 1

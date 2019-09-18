@@ -16,6 +16,7 @@ from .. import characters
 from .. import constants
 from .. import forward_model
 from .. import graphics
+from .. import rewarder
 from .. import utility
 
 
@@ -50,6 +51,8 @@ class Pomme(gym.Env):
         self._viewer = None
         self._is_partially_observable = is_partially_observable
         self._env = env
+
+        self.rewarder = rewarder.Rewarder()
 
         self.training_agent = None
         self.model = forward_model.ForwardModel()
@@ -146,8 +149,11 @@ class Pomme(gym.Env):
         return self.observations
 
     def _get_rewards(self):
-        return self.model.get_rewards(self._agents, self._game_type,
-                                      self._step_count, self._max_steps)
+        rewards = self.model.get_rewards(self._agents, self._game_type,
+                                         self._step_count, self._max_steps)
+        rewards = self.rewarder(rewards, self._board, self._prev_board, self._agents,
+                                self._prev_kick, self._bombs, self._flames)
+        return rewards
 
     def _get_done(self):
         return self.model.get_done(self._agents, self._step_count,
@@ -184,6 +190,8 @@ class Pomme(gym.Env):
 
     def step(self, actions):
         self._intended_actions = actions
+        self._prev_board = self._board.copy()
+        self._prev_kick = [agent.can_kick for agent in self._agents]
 
         max_blast_strength = self._agent_view_size or 10
         result = self.model.step(

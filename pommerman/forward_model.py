@@ -428,6 +428,8 @@ class ForwardModel(object):
 
         # Explode bombs.
         exploded_map = np.zeros_like(curr_board)
+        bomber_map = np.empty_like(curr_board, dtype=np.object)
+        bomber_map.fill(set())
         has_new_explosions = False
 
         for bomb in curr_bombs:
@@ -456,6 +458,8 @@ class ForwardModel(object):
                         if curr_board[r][c] == constants.Item.Rigid.value:
                             break
                         exploded_map[r][c] = 1
+                        new_bombers = set([bomb.bomber, *bomb.chain_bombers])
+                        bomber_map[r][c] = bomber_map[r][c].union(new_bombers)
                         if curr_board[r][c] == constants.Item.Wood.value:
                             break
 
@@ -463,6 +467,7 @@ class ForwardModel(object):
             for bomb in curr_bombs:
                 if bomb.in_range(exploded_map):
                     bomb.fire()
+                    bomb.chain_bombers.update(bomber_map[bomb.position])
                     has_new_explosions = True
 
         # Update the board's bombs.
@@ -472,7 +477,8 @@ class ForwardModel(object):
         # Update the board's flames.
         flame_positions = np.where(exploded_map == 1)
         for row, col in zip(flame_positions[0], flame_positions[1]):
-            curr_flames.append(characters.Flame((row, col)))
+            for bomber in bomber_map[row][col]:
+                curr_flames.append(characters.Flame((row, col), bomber))
         for flame in curr_flames:
             curr_board[flame.position] = constants.Item.Flames.value
 
@@ -590,6 +596,7 @@ class ForwardModel(object):
 
     @staticmethod
     def get_info(done, rewards, game_type, agents):
+        return {}
         if game_type == constants.GameType.FFA or game_type == constants.GameType.OneVsOne:
             alive = [agent for agent in agents if agent.is_alive]
             if done:
