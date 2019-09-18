@@ -30,7 +30,7 @@ class Rewarder():
                 reward = rewards[idx]
             if not agent.is_alive:
                 if self.bomb_offset:
-                    reward += [[-1, -1]]
+                    reward = [[-1, -1]]
                 else:
                     reward = -1
                     continue
@@ -64,8 +64,7 @@ class Rewarder():
             reward = [[idx, reward[:, 1][reward[:, 0] == idx].sum()]
                       for idx in np.unique(reward[:, 0])]
             reward = np.array(reward)
-            reward[:, 1] = np.clip(reward[:, 1], -1, None)
-            reward = reward[np.argsort(reward[:, 0])]
+            reward = reward[np.argsort(reward[:, 0])][::-1]
             rewards[idx] = reward
 
         return rewards
