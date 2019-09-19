@@ -1,7 +1,5 @@
 import numpy as np
 
-# TODO add bomb place offset (how many time steps back was bomb placed that caused reward)
-
 
 class Rewarder():
 
@@ -150,7 +148,7 @@ class Rewarder():
                     continue
                 if flame.position[0] == x and flame.position[1] == y:
                     if self.bomb_offset:
-                        reward += [[-(13 - flame.life), -0.25]]
+                        reward += [[-(12 - flame.life), -0.25]]
                     else:
                         reward += -0.25
                     break
