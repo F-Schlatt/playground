@@ -4,12 +4,12 @@ import numpy as np
 class Rewarder():
 
     def __init__(self,
-                 collect_bomb=True,
-                 collect_kick=True,
-                 collect_range=True,
-                 enemy_dead=True,
-                 explode_crate=True,
-                 teammate_dead=True,
+                 collect_bomb=0.1,
+                 collect_kick=0.1,
+                 collect_range=0.1,
+                 enemy_dead=0.5,
+                 explode_crate=0.01,
+                 teammate_dead=-0.5,
                  bomb_offset=True):
 
         self.collect_bomb = collect_bomb
@@ -23,9 +23,11 @@ class Rewarder():
     def __call__(self, rewards, board, prev_board, agents, prev_kick, bombs, flames):
         for idx, agent in enumerate(agents):
             if self.bomb_offset:
-                reward = [[-1, rewards[idx]]]
+                # reward = [[-1, rewards[idx]]]
+                reward = [[-1, 0]]
             else:
-                reward = rewards[idx]
+                # reward = rewards[idx]
+                reward = 0
             if not agent.is_alive:
                 if self.bomb_offset:
                     reward = [[-1, -1]]
@@ -70,8 +72,8 @@ class Rewarder():
     def calc_collect_bomb(self, pos, prev_board):
         if prev_board[pos] == 6:
             if self.bomb_offset:
-                return [[-1, 0.1]]
-            return 0.1
+                return [[-1, self.collect_bomb]]
+            return self.collect_bomb
         if self.bomb_offset:
             return []
         return 0
@@ -79,17 +81,17 @@ class Rewarder():
     def calc_collect_kick(self, pos, prev_board, kick):
         if (prev_board[pos] == 8) and not kick:
             if self.bomb_offset:
-                return [[-1, 0.1]]
-            return 0.1
+                return [[-1, self.collect_kick]]
+            return self.collect_kick
         if self.bomb_offset:
             return []
-        return 0.1
+        return 0
 
     def calc_collect_range(self, pos, prev_board):
         if prev_board[pos] == 7:
             if self.bomb_offset:
-                return [[-1, 0.1]]
-            return 0.1
+                return [[-1, self.collect_range]]
+            return self.collect_range
         if self.bomb_offset:
             return []
         return 0
@@ -110,9 +112,9 @@ class Rewarder():
                     continue
                 if flame.position[0] == x and flame.position[1] == y:
                     if self.bomb_offset:
-                        reward += [[-(12 - flame.life), 0.25]]
+                        reward += [[-(12 - flame.life), self.enemy_dead]]
                     else:
-                        reward += 0.25
+                        reward += self.enemy_dead
                     break
         return reward
 
@@ -123,13 +125,13 @@ class Rewarder():
             reward = 0
         prev_board = prev_board.copy()
         for flame in flames:
-            if flame.life < 2 or agent.agent_id != flame.bomber.agent_id:
+            if flame.life < 2 or agent.agent_id != flame.bomber:
                 continue
             if prev_board[flame.position] == 2:
                 if self.bomb_offset:
-                    reward += [[-10, 0.02]]
+                    reward += [[-10, self.explode_crate]]
                 else:
-                    reward += 0.02
+                    reward += self.explode_crate
                 prev_board[flame.position] = 0
         return reward
 
@@ -148,8 +150,8 @@ class Rewarder():
                     continue
                 if flame.position[0] == x and flame.position[1] == y:
                     if self.bomb_offset:
-                        reward += [[-(12 - flame.life), -0.25]]
+                        reward += [[-(12 - flame.life), self.teammate_dead]]
                     else:
-                        reward += -0.25
+                        reward += self.teammate_dead
                     break
         return reward
