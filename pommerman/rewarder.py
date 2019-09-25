@@ -108,7 +108,7 @@ class Rewarder():
         enemy_pos = np.where(enemy_dead.astype(bool))
         for x, y in zip(*enemy_pos):
             for flame in flames:
-                if agent.agent_id != flame.bomber.agent_id:
+                if agent.agent_id not in flame.chain_bombers:
                     continue
                 if flame.position[0] == x and flame.position[1] == y:
                     if self.bomb_offset:
@@ -146,7 +146,7 @@ class Rewarder():
         teammate_pos = np.where(teammate_dead.astype(bool))
         for x, y in zip(*teammate_pos):
             for flame in flames:
-                if agent.agent_id != flame.bomber.agent_id:
+                if agent.agent_id not in flame.chain_bombers:
                     continue
                 if flame.position[0] == x and flame.position[1] == y:
                     if self.bomb_offset:

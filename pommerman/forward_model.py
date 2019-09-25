@@ -429,46 +429,62 @@ class ForwardModel(object):
         # Explode bombs.
         exploded_map = np.zeros_like(curr_board)
         bomber_map = np.empty_like(curr_board, dtype=np.object)
+        bomber_chain_map = np.empty_like(curr_board, dtype=np.object)
         bomber_map.fill(set())
-        has_new_explosions = False
+        bomber_chain_map.fill(set())
+        exploded_bombs = []
+        del_bombs = set()
 
         for bomb in curr_bombs:
             bomb.tick()
             if bomb.exploded():
-                has_new_explosions = True
+                exploded_bombs.append(bomb)
             elif curr_board[bomb.position] == constants.Item.Flames.value:
                 bomb.fire()
-                has_new_explosions = True
+                exploded_bombs.append(bomb)
 
-        # Chain the explosions.
-        while has_new_explosions:
-            next_bombs = []
-            has_new_explosions = False
-            for bomb in curr_bombs:
-                if not bomb.exploded():
-                    next_bombs.append(bomb)
+        while exploded_bombs:
+
+            bomb = exploded_bombs[0]
+            sub_exp_map = np.zeros_like(curr_board)
+            bomb.bomber.incr_ammo()
+            for _, indices in bomb.explode().items():
+                for r, c in indices:
+                    if not all(
+                        [r >= 0, c >= 0, r < board_size, c < board_size]):
+                        break
+                    if curr_board[r][c] == constants.Item.Rigid.value:
+                        break
+                    sub_exp_map[r][c] = 1
+                    bomber_map[r][c] = bomber_map[r][c].union(set([bomb.bomber.agent_id]))
+                    if curr_board[r][c] == constants.Item.Wood.value:
+                        break
+
+            chain_bombers = set([bomb.bomber.agent_id])
+
+            for chain_bomb in curr_bombs:
+                if chain_bomb is bomb:
                     continue
+                if chain_bomb.in_range(sub_exp_map):
+                    if not bomb.exploded():
+                        bomb.fire()
+                        exploded_bombs.append(chain_bomb)
+                    chain_bombers.add(chain_bomb.bomber.agent_id)
+            
+            bomber_chain_map[sub_exp_map.astype(bool)] = (
+                bomber_chain_map[sub_exp_map.astype(bool)] 
+                | chain_bombers)
 
-                bomb.bomber.incr_ammo()
-                for _, indices in bomb.explode().items():
-                    for r, c in indices:
-                        if not all(
-                            [r >= 0, c >= 0, r < board_size, c < board_size]):
-                            break
-                        if curr_board[r][c] == constants.Item.Rigid.value:
-                            break
-                        exploded_map[r][c] = 1
-                        new_bombers = set([bomb.bomber, *bomb.chain_bombers])
-                        bomber_map[r][c] = bomber_map[r][c].union(new_bombers)
-                        if curr_board[r][c] == constants.Item.Wood.value:
-                            break
+            exploded_map += sub_exp_map
+            
+            del_bombs.add(bomb)
 
-            curr_bombs = next_bombs
-            for bomb in curr_bombs:
-                if bomb.in_range(exploded_map):
-                    bomb.fire()
-                    bomb.chain_bombers.update(bomber_map[bomb.position])
-                    has_new_explosions = True
+            del exploded_bombs[0]
+
+        exploded_map = np.clip(exploded_map, 0, 1)
+
+        for bomb in del_bombs:
+            curr_bombs.remove(bomb)
 
         # Update the board's bombs.
         for bomb in curr_bombs:
@@ -478,7 +494,8 @@ class ForwardModel(object):
         flame_positions = np.where(exploded_map == 1)
         for row, col in zip(flame_positions[0], flame_positions[1]):
             for bomber in bomber_map[row][col]:
-                curr_flames.append(characters.Flame((row, col), bomber))
+                chain_bombers = bomber_chain_map[row][col]
+                curr_flames.append(characters.Flame((row, col), bomber, chain_bombers))
         for flame in curr_flames:
             curr_board[flame.position] = constants.Item.Flames.value
 

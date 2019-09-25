@@ -165,10 +165,11 @@ class Bomb(object):
 class Flame(object):
     """Container for Flame object."""
 
-    def __init__(self, position, bomber, life=2):
+    def __init__(self, position, bomber, chain_bombers, life=2):
         self.position = position
         self.life = life
         self.bomber = bomber
+        self.chain_bombers = chain_bombers
 
     def tick(self):
         self.life -= 1
