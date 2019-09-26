@@ -429,9 +429,7 @@ class ForwardModel(object):
         # Explode bombs.
         exploded_map = np.zeros_like(curr_board)
         bomber_map = np.empty_like(curr_board, dtype=np.object)
-        bomber_chain_map = np.empty_like(curr_board, dtype=np.object)
         bomber_map.fill(set())
-        bomber_chain_map.fill(set())
         exploded_bombs = []
         del_bombs = set()
 
@@ -460,20 +458,13 @@ class ForwardModel(object):
                     if curr_board[r][c] == constants.Item.Wood.value:
                         break
 
-            chain_bombers = set([bomb.bomber.agent_id])
-
             for chain_bomb in curr_bombs:
                 if chain_bomb is bomb:
                     continue
                 if chain_bomb.in_range(sub_exp_map):
-                    if not bomb.exploded():
+                    if not chain_bomb.exploded():
                         bomb.fire()
                         exploded_bombs.append(chain_bomb)
-                    chain_bombers.add(chain_bomb.bomber.agent_id)
-            
-            bomber_chain_map[sub_exp_map.astype(bool)] = (
-                bomber_chain_map[sub_exp_map.astype(bool)] 
-                | chain_bombers)
 
             exploded_map += sub_exp_map
             
@@ -494,8 +485,7 @@ class ForwardModel(object):
         flame_positions = np.where(exploded_map == 1)
         for row, col in zip(flame_positions[0], flame_positions[1]):
             for bomber in bomber_map[row][col]:
-                chain_bombers = bomber_chain_map[row][col]
-                curr_flames.append(characters.Flame((row, col), bomber, chain_bombers))
+                curr_flames.append(characters.Flame((row, col), bomber))
         for flame in curr_flames:
             curr_board[flame.position] = constants.Item.Flames.value
 

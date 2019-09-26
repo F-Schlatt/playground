@@ -96,7 +96,7 @@ class Rewarder():
             return []
         return 0
 
-    def calc_enemy_dead(self, agent, enemies, board, prev_board, flames):
+    def calc_elim_enemy(self, agent, enemies, board, prev_board, flames):
         enemy_dead = sum(
             [(prev_board == enemy) * int(enemy not in board) for enemy in enemies])
         if self.bomb_offset:
@@ -106,15 +106,36 @@ class Rewarder():
         if not enemy_dead.any():
             return reward
         enemy_pos = np.where(enemy_dead.astype(bool))
-        for x, y in zip(*enemy_pos):
+        for pos in zip(*enemy_pos):
             for flame in flames:
-                if agent.agent_id not in flame.chain_bombers:
+                if agent.agent_id != flame.bomber:
                     continue
-                if flame.position[0] == x and flame.position[1] == y:
+                if flame.position == pos:
                     if self.bomb_offset:
                         reward += [[-(12 - flame.life), self.enemy_dead]]
                     else:
                         reward += self.enemy_dead
+                    break
+        return reward
+
+    def calc_elim_teamate(self, agent, teammate, board, prev_board, flames):
+        teammate_dead = (prev_board == teammate) * int(teammate not in board)
+        if self.bomb_offset:
+            reward = []
+        else:
+            reward = 0
+        if not teammate_dead.any():
+            return reward
+        teammate_pos = np.where(teammate_dead.astype(bool))
+        for pos in zip(*teammate_pos):
+            for flame in flames:
+                if agent.agent_id != flame.bomber:
+                    continue
+                if flame.position == pos:
+                    if self.bomb_offset:
+                        reward += [[-(12 - flame.life), self.teammate_dead]]
+                    else:
+                        reward += self.teammate_dead
                     break
         return reward
 
@@ -133,25 +154,4 @@ class Rewarder():
                 else:
                     reward += self.explode_crate
                 prev_board[flame.position] = 0
-        return reward
-
-    def calc_teammate_dead(self, agent, teammate, board, prev_board, flames):
-        teammate_dead = (prev_board == teammate) * int(teammate not in board)
-        if self.bomb_offset:
-            reward = []
-        else:
-            reward = 0
-        if not teammate_dead.any():
-            return reward
-        teammate_pos = np.where(teammate_dead.astype(bool))
-        for x, y in zip(*teammate_pos):
-            for flame in flames:
-                if agent.agent_id not in flame.chain_bombers:
-                    continue
-                if flame.position[0] == x and flame.position[1] == y:
-                    if self.bomb_offset:
-                        reward += [[-(12 - flame.life), self.teammate_dead]]
-                    else:
-                        reward += self.teammate_dead
-                    break
         return reward
