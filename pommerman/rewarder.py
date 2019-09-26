@@ -169,7 +169,7 @@ class Rewarder():
                     break
         return reward
 
-    def calc_elim_teamate(self, agent, teammate, board, prev_board, flames):
+    def calc_elim_teammate(self, agent, teammate, board, prev_board, flames):
         teammate_dead = (prev_board == teammate) * int(teammate not in board)
         if self.bomb_offset:
             reward = []
