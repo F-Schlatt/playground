@@ -74,8 +74,8 @@ class Rewarder():
             if self.explode_crate:
                 reward += self.calc_explode_crate(
                     agent, prev_board, flames)
-            reward = np.array(reward)
             if self.bomb_offset:
+                reward = np.array(reward)
                 reward = [[idx, reward[:, 1][reward[:, 0] == idx].sum()]
                         for idx in np.unique(reward[:, 0])]
                 reward = np.array(reward)
