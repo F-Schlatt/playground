@@ -36,7 +36,7 @@ class Rewarder():
                 if self.bomb_offset:
                     reward = [[-1, -1]]
                 else:
-                    reward = -1
+                    rewards[idx] = -1
                     continue
 
             if self.collect_bomb:
@@ -130,8 +130,7 @@ class Rewarder():
         for pos in enemy_pos:
             for flame in flames:
                 if flame.position == pos:
-                    if self.bomb_offset:
-                        reward += [[-(12 - flame.life), self.dead_enemy]]
+                    reward += [[-(12 - flame.life), self.dead_enemy]]
                     break
         return reward
 
@@ -153,8 +152,7 @@ class Rewarder():
             return self.dead_teammate
         for flame in flames:
             if flame.position == pos:
-                if self.bomb_offset:
-                    reward += [[-(12 - flame.life), self.dead_teammate]]
+                reward += [[-(12 - flame.life), self.dead_teammate]]
                 break
         return reward
 
