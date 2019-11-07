@@ -12,6 +12,7 @@ class Rewarder():
                  elim_enemy=0.5,
                  elim_teammate=-0.5,
                  explode_crate=0.01,
+                 kick_elim=0.5,
                  bomb_offset=True):
 
         self.collect_bomb = collect_bomb
@@ -22,6 +23,7 @@ class Rewarder():
         self.elim_enemy = elim_enemy
         self.explode_crate = explode_crate
         self.elim_teammate = elim_teammate
+        self.kick_elim = kick_elim
         self.bomb_offset = bomb_offset
 
     def __call__(self, rewards, board, prev_board, agents, prev_kick, bombs, flames):
@@ -74,6 +76,11 @@ class Rewarder():
             if self.explode_crate:
                 reward += self.calc_explode_crate(
                     agent, prev_board, flames)
+            if self.kick_elim:
+                reward += self.calc_kick_elim(
+                    agent, agents,
+                    [enemy for enemy in agent.enemies],
+                    board, prev_board, flames)
             if self.bomb_offset:
                 reward = np.array(reward)
                 reward = [[idx, reward[:, 1][reward[:, 0] == idx].sum()]
@@ -172,7 +179,7 @@ class Rewarder():
                      if enemy.agent_id + 10 in dead_enemies]
         for pos in enemy_pos:
             for flame in flames:
-                if agent.agent_id != flame.bomber:
+                if agent.agent_id != flame.bomb.bomber.agent_id:
                     continue
                 if flame.position == pos:
                     if self.bomb_offset:
@@ -198,7 +205,7 @@ class Rewarder():
                 break
         for flame in flames:
             if flame.position == pos:
-                if agent.agent_id != flame.bomber:
+                if agent.agent_id != flame.bomb.bomber.agent_id:
                     continue
                 if self.bomb_offset:
                     return [[-(12 - flame.life), self.dead_teammate]]
@@ -214,7 +221,7 @@ class Rewarder():
             reward = 0
         prev_board = prev_board.copy()
         for flame in flames:
-            if flame.life < 2 or agent.agent_id != flame.bomber:
+            if flame.life < 2 or agent.agent_id != flame.bomb.bomber.agent_id:
                 continue
             if prev_board[flame.position] == 2:
                 if self.bomb_offset:
@@ -222,4 +229,31 @@ class Rewarder():
                 else:
                     reward += self.explode_crate
                 prev_board[flame.position] = 0
+        return reward
+
+    def calc_kick_elim(self, agent, agents, enemies, board, prev_board, flames):
+        enemy_dead = sum([
+            (prev_board == enemy.value) * int(enemy.value not in board)
+            for enemy in enemies])
+        enemy_dead = enemy_dead.astype(bool)
+        if self.bomb_offset:
+            reward = []
+        else:
+            reward = 0
+        if not enemy_dead.any():
+            return reward
+        dead_enemies = prev_board[enemy_dead]
+        enemy_pos = [enemy.position for enemy in agents
+                     if enemy.agent_id + 10 in dead_enemies]
+        for pos in enemy_pos:
+            for flame in flames:
+                for kicker, kick_offset in flame.bomb.kicks:
+                    if agent.agent_id != kicker.agent_id:
+                        continue
+                    if flame.position == pos:
+                        if self.bomb_offset:
+                            reward += [[-(kick_offset + 2 - flame.life), self.kick_elim]]
+                        if not self.bomb_offset:
+                            reward += self.kick_elim * len(enemy_pos)
+                        break
         return reward

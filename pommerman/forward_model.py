@@ -342,6 +342,7 @@ class ForwardModel(object):
                 agent_indexed_by_kicked_bomb[num_bomb] = num_agent
                 kicked_bomb_indexed_by_agent[num_agent] = num_bomb
                 bomb.moving_direction = direction
+                bomb.add_kicker(agent)
                 # Bombs may still collide and we then need to reverse bomb and agent ..
             else:
                 delayed_bomb_updates.append((num_bomb, bomb.position))
@@ -428,8 +429,8 @@ class ForwardModel(object):
 
         # Explode bombs.
         exploded_map = np.zeros_like(curr_board)
-        bomber_map = np.empty_like(curr_board, dtype=np.object)
-        bomber_map.fill(set())
+        bomb_map = np.empty_like(curr_board, dtype=np.object)
+        bomb_map.fill(set())
         exploded_bombs = []
         del_bombs = set()
 
@@ -454,7 +455,7 @@ class ForwardModel(object):
                     if curr_board[r][c] == constants.Item.Rigid.value:
                         break
                     sub_exp_map[r][c] = 1
-                    bomber_map[r][c] = bomber_map[r][c].union(set([bomb.bomber.agent_id]))
+                    bomb_map[r][c] = bomb_map[r][c].union(set([bomb]))
                     if curr_board[r][c] == constants.Item.Wood.value:
                         break
 
@@ -484,8 +485,9 @@ class ForwardModel(object):
         # Update the board's flames.
         flame_positions = np.where(exploded_map == 1)
         for row, col in zip(flame_positions[0], flame_positions[1]):
-            for bomber in bomber_map[row][col]:
-                curr_flames.append(characters.Flame((row, col), bomber))
+            for bomb in bomb_map[row][col]:
+                curr_flames.append(
+                    characters.Flame((row, col), bomb))
         for flame in curr_flames:
             curr_board[flame.position] = constants.Item.Flames.value
 

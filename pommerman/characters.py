@@ -112,6 +112,7 @@ class Bomb(object):
                  moving_direction=None):
         self.bomber = bomber
         self.chain_bombers = set()
+        self.kicks = []
         self.position = position
         self.life = life
         self.blast_strength = blast_strength
@@ -128,6 +129,9 @@ class Bomb(object):
         if self.is_moving():
             self.position = utility.get_next_position(self.position,
                                                       self.moving_direction)
+
+    def add_kicker(self, agent):
+        self.kicks.append([agent, self.life])
 
     def stop(self):
         self.moving_direction = None
@@ -165,10 +169,10 @@ class Bomb(object):
 class Flame(object):
     """Container for Flame object."""
 
-    def __init__(self, position, bomber, life=2):
+    def __init__(self, position, bomb, life=2):
         self.position = position
         self.life = life
-        self.bomber = bomber
+        self.bomb = bomb
 
     def tick(self):
         self.life -= 1
