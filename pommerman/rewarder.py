@@ -183,9 +183,9 @@ class Rewarder():
                     continue
                 if flame.position == pos:
                     if self.bomb_offset:
-                        reward += [[-(12 - flame.life), self.dead_enemy]]
+                        reward += [[-(12 - flame.life), self.elim_enemy]]
                     if not self.bomb_offset:
-                        reward += self.dead_enemy * len(enemy_pos)
+                        reward += self.elim_enemy * len(enemy_pos)
                     break
         return reward
 
@@ -208,9 +208,9 @@ class Rewarder():
                 if agent.agent_id != flame.bomb.bomber.agent_id:
                     continue
                 if self.bomb_offset:
-                    return [[-(12 - flame.life), self.dead_teammate]]
+                    return [[-(12 - flame.life), self.elim_teammate]]
                 if not self.bomb_offset:
-                    return self.dead_teammate
+                    return self.elim_teammate
                 break
         return reward
 
